@@ -72,57 +72,54 @@ boxrule=0pt,boxsep=0pt,breakable}
 
     \chapter{Preface}
 
-    Every year there are a couple of inquiries about how to get introduced into the solver code base. Motivated people with great ideas but limited time generally end up succumbing to the rather big entry energy required to understand how it is implemented.
+    Каждый год появляется множество предложений о том, как познакомиться с кодовой базой решателя. Заинтересованные люди с большими идеями, но ограниченным временем, как правило, в конечном итоге сдаются перед довольно большой затраченной энергией, необходимой для того, чтобы понять, как это реализовано.
 
-    It is not difficult for me to understand them. I have been myself overwhelmed by it. I am still. I have been though lucky enough of having several ingredients that have allowed me to reach a certain degree of understanding of what is going on: a) motivation to undertake changes, b) support from people with a better geometry knowledge and better mathematical background, c) time.
+    Мне не трудно их понять. Я сам был подавлен этим. И до сих пор. Однако мне повезло, что у меня было несколько составляющих, позволивших мне достичь определенной степени понимания происходящего: а) мотивация для проведения изменений, б) поддержка со стороны людей с лучшими знаниями геометрии и лучшей математической подготовкой, в) время.
 
-    This document attempts to lower the entry point towards the code base of the solver.
+    Этот документ является попыткой уменьшить уровень вхождения в кодовую базу решателя.
 
-    It is my belief that only through a diversity of opinions and ideas we can actually collaborate into making significant and meaningful improvements.
+    Я считаю, что только благодаря разнообразию мнений и идей мы сможем совместно добиться существенных и значимых улучшений.
 
-    This document should serve to gain a general common understanding allowing to identify improvements and enabling a discussion. For the rest, you are not alone. Make an account in the FreeCAD Community forum if you don't have already one. It is there that true collaboration starts.
-
-
+    Этот документ должен служить для получения общего понимания, позволяющего найти усовершенствования и создать условия для обсуждения. Для остальных - вы не одиноки. Заведите аккаунт на форуме FreeCAD Community, если у вас его еще нет. Именно там начинается настоящее сотрудничество.
 
     \tableofcontents
     \newpage
 
     \mainmatter
 
-    \chapter{Introduction}
+    \chapter{Введение}
 
-    This document is an introduction to solver architecture behind FreeCAD. It describes mainly the architecture and implementation of the solver. Other parts of the Sketcher are discussed only insofar as to enable to understand the former.
+Этот документ является введением в архитектуру решателя FreeCAD. В документе описывается в основном архитектура и реализация решателя. Другие части решателя рассматриваются лишь в том объеме, который позволяет понять первую.
 
-    In order to save time to most readers, let's first describe what this is not. This document is not about how to use the Sketcher to draw a shape. This document is not about how to efficiently use the Sketcher. This document is not about general Sketcher programming.
+    Чтобы сэкономить время большинству читателей, давайте сначала опишем, чем это не является. Этот документ не о том, как использовать Sketcher для рисования фигур. Этот документ не о том, как эффективно использовать Sketcher. Этот документ не посвящен общему программированию Sketcher.
 
-    This document tries to throw some light into how the solver actually works, and other than out of mere curiosity, it may be of little to no interest for 99.\textoverline{9}\% of the people. If you are still reading maybe you belong to that minority who is trying to:
-
-    \begin{enumerate}[a)]
-    \item Introduce support for a new geometry in the Sketcher.
-    \item Introduce support for a new constraint in the Sketcher.
-    \item Try to solve a bug in the solver.
-    \item Get more information from the solver process to the user.
-    \item Introduce a new algorithm to the solver.
-    \item Improve an algorithm of the solver.
+    Этот документ пытается пролить свет на то, как на самом деле работает решатель, и кроме как из простого любопытства, он может быть практически не интересен для 99.\textoverline{9}\% людей. Если вы все еще читаете, возможно, вы принадлежите к тому меньшинству, которое пытается это сделать:
+\begin{enumerate}[a)].
+    \item Добавить поддержку новой геометрии в Sketcher.
+    \item Добавить поддержку новых ограничений в Sketcher.
+    \item Попытаться исправить ошибки в решателе.
+    \item Предоставить пользователю больше информации о процессе работы решателя.
+    \item Добавить новый алгоритм в решатель.
+    \item Улучшить существующий в решателе алгоритм.
     \end{enumerate}
 
-    You will certainly get more information than you actually need for the first two items and you will still need much more information from elsewhere. You may want to search for the git commits when the support for Hyperbola and Parabola was introduced for more information.
+    Вы наверняка получите больше информации, чем вам на самом деле необходимо для первых двух пунктов, и вам еще понадобится гораздо больше информации из других источников. Возможно, вы захотите поискать git-коммиты, в которых была добавлена поддержка Гиперболы и Параболы, для получения дополнительной информации.
 
-    For the next two items it should give you a fair overview of how things work. But it is probably for the last two items where this information may be specially valuable.
+    Что касается следующих двух пунктов, они должны дать вам достаточный объем информации о том, как все работает. Но, вероятно, именно для последних двух пунктов эта информация может быть особенно ценной.
 
     \chapter{Sketcher Architecture}
 
-    \section{Sketcher, solver and interface}
+    \section{Скетчер, решатель и интерфейс}
 
-    A sketcher object, class \SketchObject{}, contains all the geometry and constraints that define a given Sketch, as well as all the high level functions that can be applied to a sketch to add, delete or otherwise modify this geometry.
+    Объект скетчера, класс \SketchObject{}, содержит всю геометрию и ограничения, определяющие данный эскиз, а также все функции высокого уровня, которые могут быть применимы к эскизу для добавления, удаления или иного изменения этой геометрии.
 
-    However, the sketcher object relies on specialised code, a geometric contraint system called PlaneGCS, in order to perform the actual solving of the constraints, which causes the geometry to adapt to those constraints.
+    В то же время, объект эскиза основывается на специализированном коде, системе геометрических ограничений под названием PlaneGCS, для выполнения фактического решения ограничений, в результате чего геометрия адаптируется к этим ограничениям.
 
     \begin{tolerant}{500}
-    The most important concept at this architectural level is to understand that PlaneGCS does \underline{not} understand the concept of geometry and constraints used in the Sketcher. For the programmer, it is not aware of what Part::Geometry and Sketcher::Constraint are.
+    Наиболее важной идеей на этом уровне является то, что PlaneGCS \underline{не}понимает принцип геометрии и ограничений, используемых в Sketcher. Для обычного программиста неизвестно, что представляют собой Part::Geometry и Sketcher::Constraint.
     \end{tolerant}
 
-    Though this may initially seem as a design flaw or limitation, it is not. Those higher level representations of reality are very important for the remaining operations of the Sketcher, but they are useless when talking about the number of degrees of freedom introduced by a geometric shape, or to calculate the gradients to decide in which direction to move an element when seeking convergence. Similarly, the information used during solving is mostly useless at a higher level. Of course it could have been decided to put everything together, but there would be no advantages and a lot of flexibility would have been lost, for example, the ability of change to another better solver implementation if one ever is created, or to use PlaneGCS in other products (yes there are other products aside from FreeCAD that use PlaneGCS).
+    Хотя поначалу это может показаться недостатком дизайна или ограничением, это не так. Такие представления данных более высокого уровня очень важны для остальных операций Sketcher, но они бесполезны, когда речь идет о количестве степеней свободы, вносимых геометрической формой, или для расчета градиентов, чтобы решить, в каком направлении перемещать элемент при поиске сходимости. Аналогично, информация, используемая в процессе решения, в основном бесполезна на более высоком уровне. Конечно, можно было бы решить объединить все вместе, но в этом не было бы никаких преимуществ и была бы потеряна большая гибкость, например, возможность перейти на другую лучшую реализацию решателя, если таковая когда-нибудь будет создана, или использовать PlaneGCS в других продуктах (да, есть и другие продукты, кроме FreeCAD, которые используют PlaneGCS).
 
     \begin{figure}
     \caption{Sketcher/solver basic architecture}
@@ -140,36 +137,36 @@ boxrule=0pt,boxsep=0pt,breakable}
     \end{tikzpicture}
     \end{figure}
 
-    Having a higher level Sketcher that understands a representation of the geometry and a solver that uses a different one, makes necessary to bring an interface therebetween in order to connect both. This interface, which we are going to refer to as solver interface, is the class \Sketch{}.
+    Наличие скетчера более высокого уровня, который понимает одно представление геометрии, и решателя, который использует другое, делает необходимым наличие интерфейса между ними для связи. Этим интерфейсом, который мы будем называть интерфейсом решателя, является класс \Sketch{}.
 
-    So it shall be clear by now that the Sketcher has three main parts when referring to the solver architecture:
+    Итак, теперь должно быть понятно, что Sketcher состоит из трех основных частей, когда речь идет об архитектуре решателя:
 
     \begin{itemize}
-    \item Sketcher: \SketchObject{} class
-    \item Solver interface: \Sketch{} class
-    \item Solver: Everything inside the PlaneGCS directory
+    \item Sketcher: \SketchObject{} класс
+    \item Интерфейс решателя: \Sketch{} класс
+    \item Solver: Все внутри каталога PlaneGCS
     \end{itemize}
 
-    The latter is the main focus of this document.
+    Последнему и посвящен данный документ.
 
-    \section{Sketcher Geometry and Constraints}
+    \section {Геометрия эскиза и ограничения}
 
-    We refer to the higher level geometry and Constraints used at \SketchObject{} level.
+    Мы ссылаемся на геометрию более высокого уровня и ограничения, используемые на уровне \SketchObject{}.
 
     \begin{tolerant}{500}
-    The Geometry used in the Sketcher is defined in \emph{Geometry.h} and all of it derives from Part::Geometry. The Sketcher has a vector of pointers to such objects, \emph{std::vector\textless Part::Geometry *\textgreater}.
+    Геометрия, используемая в Sketcher, определена в \emph{Geometry.h} и вся она является производной от Part::Geometry. Скетчер имеет вектор указателей на такие объекты, \emph{std::vector\textless Part::Geometry *\textgreater}.
 
-    Those Geometry classes are wrappers of OpenCASCADE Geometry classes which add the capability to store the geometry when saving and higher level functions to simplify certain common tasks.
+    Эти классы Geometry являются обертками классов OpenCASCADE Geometry, которые добавляют возможность сохранения геометрии при сохранении и функций более высокого уровня для упрощения решения ряда задач.
 
-    The Constraints used in the Sketcher are defined in \emph{Constraint.h}, not to be confused with \emph{Constraints.h} in the \emph{planegcs} directory. The Sketcher has a vector of pointers to such objects, \emph{std::vector\textless Sketcher::Constraints *\textgreater}.
+    Ограничения, используемые в Sketcher, определены в \emph{Constraint.h}, не путать с \emph{Constraints.h} в каталоге \emph{planegcs}. Sketcher содержит вектор указателей на такие объекты, \emph{std::vector\textless Sketcher::Constraints *\textgreater}.
 
-    Those Constraints merely define the relation between parts of the same or different geometric elements. Each constraint has a Type, which is an enum Sketcher::ConstraintType, e.g. Sketcher::Horizontal for an Horizontal constraint.
+    Эти ограничения просто определяют связь между частями одинаковых или разных геометрических элементов. Каждое ограничение имеет тип, который является перечислением Sketcher::ConstraintType, например, Sketcher::Horizontal для горизонтального ограничения.
 
-    They accomodate 3 \emph{int} values called First, Second and Third. Each of these is able to store the index within the Geometry array of a Geometry object. There is a Constraint::GeoUndef value that is used when no value is stored there. So, for example, a Horizontal constraint only needs to store one geometry index, the one of the line to which such constraint apply, which will be stored in First. Second and Third will be set to GeoUndef. However, a symmetry constraint will in the most general case require three different geometries indexed.
+    Они вмещают 3 \emph{int} значения, называемые First, Second и Third. Каждое из них может хранить индекс в массиве Geometry объекта Geometry. Существует значение Constraint::GeoUndef, которое используется, когда в нем не хранится никакого значения. Так, например, ограничению Horizontal нужно хранить только один индекс геометрии, индекс линии, к которой применяется это ограничение, который будет храниться в First. Второй и третий будут установлены в GeoUndef. Однако, ограничение симметрии в самом общем случае требует хранения трех различных геометрических индексов.
 
-    In addition to those 3 \emph{int} values, a constraint also accomodates 3 \emph{Sketcher::PointPos} enums, FirstPos, SecondPos, ThirdPos, which can take the values \emph{Sketcher::none}, \emph{Sketcher::start}, \emph{Sketcher::end}, \emph{Sketcher::mid}. They default to \emph{Sketcher::none}. With these values, it is possible to indicate that the constraint is to be applied to the edge (\emph{Sketcher::none}), the start point (\emph{Sketcher:start}), the endpoint (\emph{Sketcher::end}) or a center (\emph{Sketcher::mid}). Of course not all geometric elements have all the possible combinations (circles do not have a start or endpoint, a line does not have a center), but all possible combinations define the limits of what this higher layer Constraint can indicate.
+    В дополнение к этим 3 значениям \emph{int}, ограничение также поддерживает 3 перечисления \emph{Sketcher::PointPos}, FirstPos, SecondPos, ThirdPos, которые могут принимать значения \emph{Sketcher::none}, \emph{Sketcher::start}, \emph{Sketcher::end}, \emph{Sketcher::mid}. По умолчанию они имеют значение \emph{Sketcher::none}. С помощью этих значений можно указать, что ограничение должно быть применено к краю (\emph{Sketcher::none}), начальной точке (\emph{Sketcher:start}), конечной точке (\emph{Sketcher::end}) или центру (\emph{Sketcher::mid}). Конечно, не все геометрические элементы имеют все возможные комбинации (окружности не имеют начальной или конечной точки, линия не имеет центра), но все возможные комбинации определяют границы того, что может указать это Ограничение более высокого уровня.
 
-    Such limitation of three addressable vertices per geometry was discussed at length when introducing the Ellipse and Arc of Ellipse to the Sketcher. The problem with incrementing the number of addressable vertices was twofold, a) a new element could require a variable number of vertices (e.g. B-Spline), b) it would require a substantial change of both the Sketcher and the Sketcher interface. Finally the solution came as a new type of constraint, the Alignment constraint. This type of constraint has a subtype \emph{Sketcher::InternalAlignmentType}, which incorporates a geometry specific subtype, e.g. \emph{Sketcher::EllipseFocus1}, which identifies that a second geometry, in this case a point, is to be aligned to that position of an Ellipse. Notably the geometry is not restricted to a point. It can be a line, as in the case of the Major axis of an Ellipse, or a circle, as in the case of the control points of a B-Spline. This provides a high degree of flexibility in the implementation and in the ability to support complex shapes. However, as it will be apparent in the following sections, the flexibility gained by using the internalalignment constraint comes at the expense of having to write specific alignment code.
+    Такое ограничение в три адресуемые вершины на геометрию подробно обсуждалось при введении в Sketcher эллипса и дуги эллипса. Проблема с увеличением числа адресуемых вершин была двоякой: а) новый элемент может потребовать переменного числа вершин (например, B-Spline), б) это потребовало бы существенного изменения как самого Sketcher, так и интерфейса Sketcher. Наконец, решение было найдено в виде нового типа ограничений - ограничения выравнивания. Этот тип ограничений имеет подтип \emph{Sketcher::InternalAlignmentType}, который включает в себя подтип, специфичный для геометрии, например, \emph{Sketcher::EllipseFocus1}, который определяет, что вторая геометрия, в данном случае точка, должна быть выровнена по данной позиции эллипса. Примечательно, что геометрия не ограничивается точкой. Это может быть линия, как в случае главной оси эллипса, или окружность, как в случае контрольных точек B-сплайна. Это обеспечивает высокую степень гибкости в реализации и возможность поддержки сложных форм. Однако, как будет видно из следующих разделов, гибкость, полученная при использовании ограничения внутреннего выравнивания, достигается за счет необходимости написания специального кода выравнивания.
     \end{tolerant}
 
     \section{The solver}
